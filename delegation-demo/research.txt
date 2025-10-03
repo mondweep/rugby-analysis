@@ -1,0 +1,14 @@
+Loaded cached credentials.
+Here are three machine learning models used for sports injury prediction:
+
+**1. Random Forest**
+*   **Key Strength:** High performance and ability to handle a large number of input variables, making it effective at identifying complex interactions between risk factors.
+*   **Best Use Case:** Predicting injury risk in team sports where data is abundant and collected from various sources (e.g., GPS trackers, wellness questionnaires, and historical injury data).
+
+**2. Support Vector Machines (SVM)**
+*   **Key Strength:** Particularly powerful for classification tasks, excelling at finding the optimal boundary between athletes who are at high risk of injury and those who are not.
+*   **Best Use Case:** Scenarios with clear, high-dimensional data, such as biomechanical analysis from motion capture systems, where it can effectively classify movement patterns as safe or high-risk.
+
+**3. Logistic Regression**
+*   **Key Strength:** Simplicity and interpretability, making it easy to understand the relationship between specific risk factors (e.g., training load, age) and the likelihood of injury.
+*   **Best Use Case:** Initial risk assessments or situations where explaining the "why" behind a prediction is as important as the prediction itself, such as communicating risk to coaches and medical staff.
