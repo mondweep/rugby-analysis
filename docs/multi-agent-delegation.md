@@ -1,14 +1,23 @@
 # Multi-Agent Delegation Strategy: Claude + Gemini + Qwen
 
-## Quick Setup
+## Architecture Overview
+
+**Gemini and Qwen are MCP CLIENTS, not servers.**
+- They run as separate CLI processes
+- Coordination happens via files, stdin/stdout, and Claude Flow memory
+- Claude orchestrates by spawning Gemini/Qwen processes with prompts
+
+## Quick Test
 
 ```bash
-# Add MCP servers
-claude mcp add gemini gemini mcp start
-claude mcp add qwen qwen mcp start
+# Test Gemini CLI
+echo "What is 2+2?" | gemini -p
 
-# Verify
-claude mcp list
+# Test Qwen CLI
+echo "Generate a Python hello world function" | qwen -p
+
+# Test with file output
+gemini -p "Analyze this data" < data.txt > gemini-analysis.txt
 ```
 
 ## Optimal Token Usage Strategy
@@ -32,27 +41,76 @@ claude mcp list
 
 ## Delegation Patterns
 
-### Pattern 1: Research → Design → Implement
+### Pattern 1: CLI Process Delegation
+
+```bash
+# Single message - parallel Bash execution
+
+# Gemini: Research task
+gemini -p "Research rugby injury analysis ML approaches. List top 5 methods with pros/cons." > docs/gemini-research.txt &
+
+# Qwen: Code generation
+qwen -p "Generate a Python class for rugby player data with pandas integration. Include type hints." > src/player_data.py &
+
+# Claude: Wait and coordinate
+wait
+cat docs/gemini-research.txt  # Review Gemini's research
+cat src/player_data.py          # Review Qwen's code
+```
+
+### Pattern 2: File-Based Coordination
+
+```bash
+# Step 1: Claude prepares prompts
+cat > /tmp/gemini-prompt.txt << 'EOF'
+Analyze the rugby-back-in-game-analysis.csv data.
+Provide statistical insights on:
+1. Player recovery patterns
+2. Time-to-return distributions
+3. Injury type correlations
+Output as markdown table.
+EOF
+
+cat > /tmp/qwen-prompt.txt << 'EOF'
+Generate a complete data preprocessing module:
+- CSV loading with pandas
+- Data validation
+- Feature engineering
+- Export to multiple formats
+Output as src/preprocessing.py
+EOF
+
+# Step 2: Run agents in parallel
+gemini -p "$(cat /tmp/gemini-prompt.txt)" > docs/data-insights.md &
+qwen -p "$(cat /tmp/qwen-prompt.txt)" > src/preprocessing.py &
+wait
+
+# Step 3: Claude reviews and integrates
+# [Review files and make decisions]
+```
+
+### Pattern 3: Task Tool with Bash Delegation
 
 ```javascript
-// Single message - parallel delegation via Claude Code Task tool
+// Using Claude Code's Task tool to coordinate
 
-// Gemini: Fast research and exploration
-Task("Gemini Research Agent",
-  "Research rugby analysis ML approaches. Survey 10+ papers. Output: summary.md",
+Task("Gemini Researcher",
+  `Run this bash to delegate to Gemini:
+  gemini -p "Research 5 ML models for sports injury prediction" > docs/ml-research.md
+  Store results in Claude Flow memory`,
   "researcher")
 
-// Claude: Architecture design (you're doing this now)
-TodoWrite { todos: [
-  {content: "Design system architecture", status: "in_progress"},
-  {content: "Review research findings", status: "pending"},
-  {content: "Delegate implementation", status: "pending"}
-]}
+Task("Qwen Generator",
+  `Run this bash to delegate to Qwen:
+  qwen -p "Generate test suite for data preprocessing" > tests/test_preprocessing.py
+  Format with black and pytest`,
+  "tester")
 
-// Qwen: Bulk implementation
-Task("Qwen Implementation Agent",
-  "Generate boilerplate for 15 Python modules. Use research findings from memory.",
-  "coder")
+Task("Claude Integrator",
+  `Review outputs from Gemini and Qwen.
+  Integrate into main codebase.
+  Run tests and fix issues.`,
+  "system-architect")
 ```
 
 ### Pattern 2: Cost-Optimized Pipeline
